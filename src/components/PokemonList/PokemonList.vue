@@ -14,7 +14,7 @@ export default {
     },
     async mounted() {
         try {
-            const response = await fetchAPI("https://pokeapi.co/api/v2/pokemon/?offset=1&limit=898");
+            const response = await fetchAPI("https://pokeapi.co/api/v2/pokemon/?offset=0&limit=898");
             console.log(response);
             this.pokemons = response.map(pokemon => ({
                 name: pokemon.name,
