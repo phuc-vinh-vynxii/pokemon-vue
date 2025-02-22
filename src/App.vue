@@ -1,28 +1,90 @@
-<script>
-    import PokemonList from "./components/PokemonList/PokemonList.vue"
-    export default {
-        components: {
-            PokemonList
-        }
-    }
+<script setup>
+    import PokemonItem from './components/PokemonItem/PokemonItem.vue';
+    import { ref, computed } from 'vue';
+    import { fetchPromise, getIDPokemon } from './utils';
+    import PokemonDetail from './components/PokemonDetail/PokemonDetail.vue';
+    
+    let showDetail = ref(true);
+    let filteredPokemons = ref([]);
+    let offset = ref(0);
+    let currentPoke = ref(null);
+    const limit = 60;
 
+    const renderPokemons = computed(() => {
+        return filteredPokemons.value.slice(offset, offset.value + limit);
+    })
+
+    const pokePromise = [];
+    let pokemons = JSON.parse(localStorage.getItem("pokemonsData")) || [];
+    filteredPokemons.value = pokemons;
+    async function getPokemon() {
+        if (pokemons.length) {
+            filteredPokemons.value = pokemons;
+        } else {
+            const response = await fetchPromise("https://pokeapi.co/api/v2/pokemon/?.value=0&limit=898");
+            if (response && response.results) {
+                pokemons = response.results;
+                filteredPokemons.value = pokemons;
+                localStorage.setItem("pokemonsData", JSON.stringify(pokemons));
+            }
+        }
+    };
+    function fetchPokemonType() {
+        if (pokemons){
+            pokemons.forEach(pokemon => {
+                const promise = fetchPromise(pokemon.url);
+                pokePromise.push(promise);
+            });
+        }
+        return pokePromise;
+    }
+    async function getPokemonType() {
+        const pokeDataPromise = fetchPokemonType();
+        const pokeData = await Promise.all(pokeDataPromise);
+        pokeData.forEach((item, index) =>
+            {
+                if (pokemons[index]) {
+                    pokemons[index].types = item.types.map(item => item.type.name);
+                }
+            }
+        )
+        filteredPokemons.value = [...pokemons];
+        localStorage.setItem("pokemonsData", JSON.stringify(pokemons));
+    }
+    getPokemonType();
+
+    let queryValue = ref('');
+    function handleSearch() {
+        filteredPokemons.value = pokemons.filter((pokemon) => {
+            return pokemon.name.includes(queryValue.value.toLowerCase());
+        });
+        offset.value = 0;
+    }
+    function handleLoadMore() {
+        offset.value += limit;
+    }
+    function pokemonDetail(pokemon) {
+        currentPoke.value = pokemon;
+        showDetail.value = false;
+    }
+    function backToList() {
+        showDetail.value = true;
+    }
+    getPokemon();
 </script>
 
 <template>
-    <div class="root">
-        <div class="container">
-            <!--Title-->
-            <div class="title">
-                <p class="title__main">Pokemon API</p>
-                <input class="title__input" type="text" placeholder="Search some Pokemon...">
-            </div>
-            <!--End Title-->
-            
-            <PokemonList />
-
-            <button class="load-more">Load more</button>
+    <div class="container" v-if="showDetail">
+        <h2 class="header">Pokemon API</h2>
+        <input  class="pokemon-search" type="text" placeholder="Search some Pokemon" v-model="queryValue" @input="handleSearch">
+        <div class="pokemon-list">
+            <PokemonItem v-for="pokemon in renderPokemons" :key="getIDPokemon(pokemon.url)" :pokemon="pokemon" @select-pokemon="pokemonDetail"/>
         </div>
+        <button v-show="renderPokemons.length >= limit" class="load-more" @click="handleLoadMore">Load more</button>
     </div>
+    <template v-else>
+        <PokemonDetail :pokemon="currentPoke" @back-to-list="backToList"/>
+    </template>
 </template>
 
 <style>
@@ -32,30 +94,28 @@
     margin: 0;
     font-family: "Inter", sans-serif;
 }
-
+.header {
+    font-size: 25px;
+    font-weight: 400;
+}
 .container{
     margin: 0 auto;
     max-width: 1200px;
+    margin-inline: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     margin-bottom: 50px;
+    margin-top: 50px;
 }
-.title{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 70px 0;
+.pokemon-list {
+    display: grid;
+    grid-template-columns: repeat(6, auto);
+    margin-top: 70px;
+    max-width: 1000px;
+    width: 100%;
 }
-.title__main{
-    color: #2c3e50;
-    font-size: 37.5px;
-    line-height: 60px;
-    margin-bottom: 30px;
-    font-weight: 400;
-}
-.title__input{
+.pokemon-search {
     width: 500px;
     padding: 20px;
     background-color: #fff;
@@ -63,51 +123,17 @@
     font-family: "Arial", sans-serif;
     box-shadow: #64646f33 0px 7px 29px 0px;
     border: grey solid 1px;
+    margin-top: 40px;
 }
-.items{
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(6, 15.87%);
-    gap: 10px;
-    padding: 0 10px;
-}
-.item{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 100%;
-    width: 100%;
-    line-height: 24px;
-    padding: 10px 5px;
-    border-radius: 10px;
-    box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
-    transition: all .4s ease-in;
-    cursor: pointer;
-    background-repeat: no-repeat;
-    background-size: cover;
-}   
-.item:hover{
-    box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px;
-}
-.item__id{
-    color: #2c3e50;
-    font-size: 15px;
-    line-height: 24px;
-    text-align: center;
-}   
-.item__image{
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    background-size: contain;
-    background-repeat: no-repeat;
-    padding: 179.913px 0px 0px;
-}
-.item__name{
-    font-size: 17.55px;
-    font-weight: 700;
-    line-height: 28.08px;
-    text-align: center;
+.pokemon-item {
+    height: auto;
+    max-width: 160px;;
+    border-radius: 15px;
+    box-shadow: #0000001a 0 4px 12px;
+    padding: 20px 0;
+    margin: 10px 5px;
     text-transform: capitalize;
+    cursor: pointer;
 }
 .types{
     display: flex;

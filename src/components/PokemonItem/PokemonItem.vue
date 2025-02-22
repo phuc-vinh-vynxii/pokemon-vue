@@ -1,19 +1,63 @@
+<script setup>
+import { getIDPokemon } from '../../utils';
 
-<script>
-export default {
-    props: {
-        pokemon: Object,
-    },
-};
+
+const props = defineProps(['pokemon'])
+defineEmits(['select-pokemon']);
 </script>
 
 <template>
-<div class="item">
-    <div class="item__id"># {{ pokemon.id }}</div>
-    <div
-        class="item__image"
-        :style="`background-image: url('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png')`"
-    ></div>
-    <div class="item__name">{{ pokemon.name }}</div>
-</div>
+    <div class="pokemon-item" @click="$emit('select-pokemon', pokemon)">
+        <div class="item__id">#{{ getIDPokemon(props.pokemon.url) }}</div>
+        <img class="item__image" :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getIDPokemon(props.pokemon.url)}.png`">
+        <h3 class="item__name">{{props.pokemon.name}}</h3>
+        <div class="types">
+            <div class="type-item" v-for="item in props.pokemon.types" :key="item" :class="item">
+                {{ item }}
+            </div>
+        </div>
+    </div>
 </template>
+
+<style>
+a {
+    text-decoration: none;
+    color: black;
+}
+.pokemon-item:hover{
+    box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px;
+}
+.item__id {
+    color: #2c3e50;
+    font-size: 15px;
+    line-height: 24px;
+    text-align: center;
+}
+.item__image {
+    width: 150px;
+    height: 150px;
+}
+.item__name {
+    font-size: 17.55px;
+    font-weight: 700;
+    line-height: 28.08px;
+    text-align: center;
+    text-transform: capitalize;
+}
+.types {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.type-item {
+    font-size: 13px;
+    border-radius: 5px;
+    font-weight: 500;
+    line-height: 20.8px;
+    margin: 4px 3px;
+    padding: 3px 4px;
+    text-transform: capitalize;
+}
+</style>
