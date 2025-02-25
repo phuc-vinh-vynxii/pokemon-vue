@@ -1,22 +1,32 @@
 <script setup>
-import { getIDPokemon, fetchPromise, getIndexName, getUniqueClass } from '../../utils';
 import { ref } from 'vue';
-import { defineProps, defineEmits } from 'vue';
+// import { useRouter } from 'vue-router';
+import { getIDPokemon, fetchPromise, getIndexName, getUniqueClass } from '../../utils';
 
-
-
-defineEmits(['back-to-list'])
-const props = defineProps(['pokemon']);
+// const route = useRoute();
+// const router = useRouter();
+let pokemon = ref(null);
 let dataPromise = ref(null);
 let dataEvolution = ref({});
 let currentDirect = ref({});
 let pokemonArray = ref([]);
 let tmpDirect = {};
+// const props = defineProps(['pokemon']);
+let cachedPokemon = sessionStorage.getItem("pokemonData");
+// import { defineProps, defineEmits } from 'vue';
+
+
+
+// defineEmits(['back-to-list'])
+
+if (cachedPokemon) {
+    pokemon.value = JSON.parse(cachedPokemon);
+}
 
 async function getEvolution() {
-    if (props.pokemon) {
-        dataPromise.value = await fetchPromise(props.pokemon.url);
-        const descData = await fetchPromise(`https://pokeapi.co/api/v2/pokemon-species/${props.pokemon.name}`);
+    if (pokemon.value) {
+        dataPromise.value = await fetchPromise(pokemon.value.url);
+        const descData = await fetchPromise(`https://pokeapi.co/api/v2/pokemon-species/${pokemon.value.name}`);
         dataEvolution.value = await fetchPromise(descData.evolution_chain.url);
         dataPromise.value.flavor_text = descData.flavor_text_entries[1].flavor_text;
         // if (dataPromise.value.evolution_chain) {
@@ -47,16 +57,18 @@ getEvolutionChain();
 </script>
 
 <template>
+    
     <div>
-        <button @click="$emit('back-to-list')" class="back-btn">Back</button>
+        <RouterLink class="back-btn" to="/">&larr;Back</RouterLink>
+        <!-- <button @click="$emit('back-to-list')" class="back-btn">Back</button> -->
         <div class="pokemon-item-detail">
-            <img class="item__image detail" :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getIDPokemon(props.pokemon.url)}.png`">
+            <img class="item__image detail" :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getIDPokemon(pokemon.url)}.png`">
             <div class="types">
-                <div class="type-item" v-for="item in props.pokemon.types" :key="item" :class="item">
+                <div class="type-item" v-for="item in pokemon.types" :key="item" :class="item">
                     {{ item }}
                 </div>
             </div>
-            <h3 class="item__name detail">{{ props.pokemon.name }}</h3>
+            <h3 class="item__name detail">{{ pokemon.name }}</h3>
         </div>
         <div class="box-container">
             <div class="description">
@@ -113,7 +125,6 @@ getEvolutionChain();
                 </div>
             </div>
         </div>
-        
     </div>
 </template>
 
@@ -140,7 +151,6 @@ p {
     cursor: pointer;
 }
 .back-btn:before {
-    content: '←';
     margin-right: 5px;
 }
 .back-btn:hover {

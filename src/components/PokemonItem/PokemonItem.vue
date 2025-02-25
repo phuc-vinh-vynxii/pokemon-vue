@@ -1,13 +1,21 @@
 <script setup>
 import { getIDPokemon } from '../../utils';
+import { useRouter } from 'vue-router';
+import { defineProps, defineEmits } from 'vue';
 
 
 const props = defineProps(['pokemon'])
+const router = useRouter();
 defineEmits(['select-pokemon']);
+function storePokemon() {
+    sessionStorage.setItem("pokemonData", JSON.stringify(props.pokemon));
+    router.push("/" + props.pokemon.name);
+}
+
 </script>
 
 <template>
-    <div class="pokemon-item" @click="$emit('select-pokemon', pokemon)">
+    <div class="pokemon-item" @click="storePokemon">
         <div class="item__id">#{{ getIDPokemon(props.pokemon.url) }}</div>
         <img class="item__image" :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getIDPokemon(props.pokemon.url)}.png`">
         <h3 class="item__name">{{props.pokemon.name}}</h3>
@@ -17,6 +25,7 @@ defineEmits(['select-pokemon']);
             </div>
         </div>
     </div>
+
 </template>
 
 <style>
